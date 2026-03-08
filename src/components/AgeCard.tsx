@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { doc, setDoc, getDoc } from 'firebase/firestore';
 import { db, auth } from '../firebase';
 import { useApp } from '../context/AppContext';
@@ -16,7 +16,10 @@ export default function AgeCard() {
     const [saved, setSaved] = useState(false);
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
+    const [open, setOpen] = useState(false);
+    const popupRef = useRef<HTMLDivElement>(null);
 
+    // Load from Firestore/context on mount
     useEffect(() => {
         if (contextAge && !inputAge) { setInputAge(String(contextAge)); setSaved(true); return; }
         const uid = auth.currentUser?.uid;
@@ -31,6 +34,17 @@ export default function AgeCard() {
                 }
             }).catch(() => { });
     }, []);
+
+    // Close popup when clicking outside
+    useEffect(() => {
+        const handler = (e: MouseEvent) => {
+            if (popupRef.current && !popupRef.current.contains(e.target as Node)) {
+                setOpen(false);
+            }
+        };
+        if (open) document.addEventListener('mousedown', handler);
+        return () => document.removeEventListener('mousedown', handler);
+    }, [open]);
 
     const validate = (val: string): boolean => {
         if (!val) { setError('Please enter a valid age to continue analysis.'); return false; }
@@ -63,76 +77,98 @@ export default function AgeCard() {
     const group = saved && !isNaN(ageNum) ? getAgeGroup(ageNum) : null;
 
     return (
-        <div className="glass-card user-info-card">
-            <div className="uic-header">
-                <div className="uic-icon">👤</div>
-                <div>
-                    <div className="uic-title">User Information</div>
-                    <div className="uic-sub">Set your profile to personalise AI analysis</div>
-                </div>
-            </div>
-
-            <div className="uic-content">
-                <div className="uic-field">
-                    <label className="uic-label">User Age</label>
-                    <div className="uic-input-row">
-                        <div className="uic-input-wrap">
-                            <input
-                                type="number"
-                                className={`uic-input${error ? ' err' : ''}${saved ? ' ok' : ''}`}
-                                placeholder="Enter user age"
-                                value={inputAge}
-                                onChange={handleChange}
-                                min={5} max={100}
-                                onKeyDown={e => e.key === 'Enter' && handleSave()}
-                            />
-                            <span className="uic-unit">yrs</span>
-                        </div>
-                        {saved && inputAge === String(contextAge) ? (
-                            <div style={{ display: 'flex', gap: '8px', flex: 1 }}>
-                                <button
-                                    className="uic-save-btn saved"
-                                    disabled
-                                    style={{ flex: 1 }}
-                                >✓ Saved</button>
-                                <button
-                                    className="uic-save-btn"
-                                    style={{ flex: 1, background: 'rgba(255,255,255,0.1)', color: 'var(--text)' }}
-                                    onClick={() => setSaved(false)}
-                                >Change</button>
-                            </div>
-                        ) : (
-                            <button
-                                className="uic-save-btn"
-                                onClick={handleSave}
-                                disabled={loading || !inputAge || !!error}
-                            >
-                                {loading ? '…' : 'Save Age'}
-                            </button>
-                        )}
-                    </div>
-                    <p className="uic-desc">Age is used by the AI system to adjust language analysis according to age-related speech patterns.</p>
-                    {error && <p className="uic-error">⚠ {error}</p>}
-                </div>
-
-                {group && (
-                    <div className="uic-badge" style={{ borderColor: group.color + '55', background: group.color + '15' }}>
-                        <span className="uic-badge-icon">{group.icon}</span>
-                        <div className="uic-badge-info">
-                            <div className="uic-badge-name" style={{ color: group.color }}>
-                                {group.label} <span>· Age {ageNum}</span>
-                            </div>
-                            <div className="uic-badge-baseline">
-                                AI Model: <strong>{group.baseline}</strong>
-                            </div>
-                        </div>
-                    </div>
+        <div className="age-chip-wrap" ref={popupRef}>
+            {/* ── Compact trigger chip ── */}
+            <button className={`age-chip-trigger${open ? ' active' : ''}`} onClick={(e) => { e.stopPropagation(); setOpen(o => !o); }}>
+                <span>👤</span>
+                <span className="act-label">
+                    {saved && group ? `Age ${ageNum} · ${group.label}` : 'Enter Age'}
+                </span>
+                {saved && group && (
+                    <span className="act-dot" style={{ background: group.color }} />
                 )}
-            </div>
+                {!saved && <span className="act-warn">⚠</span>}
+                <span className="act-arrow">{open ? '▴' : '▾'}</span>
+            </button>
 
-            {!saved && (
-                <div className="uic-warning">
-                    ⚠ Age is required before running speech analysis. Please enter and save your age.
+            {/* ── Popup panel ── */}
+            {open && (
+                <div className="age-popup">
+                    {/* Header */}
+                    <div className="age-popup-header">
+                        <div className="age-popup-icon">👤</div>
+                        <div>
+                            <div className="age-popup-title">User Information</div>
+                            <div className="age-popup-sub">Set your profile to personalise AI analysis</div>
+                        </div>
+                        <button className="age-popup-close" onClick={() => setOpen(false)}>✕</button>
+                    </div>
+
+                    {/* Age Input */}
+                    <div className="age-popup-field">
+                        <label className="age-popup-label">User Age</label>
+                        <div className="age-popup-input-row">
+                            <div className="age-popup-input-wrap">
+                                <input
+                                    type="number"
+                                    className={`age-popup-input${error ? ' err' : ''}${saved ? ' ok' : ''}`}
+                                    placeholder="Enter user age"
+                                    value={inputAge}
+                                    onChange={handleChange}
+                                    min={5} max={100}
+                                    onKeyDown={e => e.key === 'Enter' && handleSave()}
+                                    autoFocus
+                                />
+                                <span className="age-popup-unit">yrs</span>
+                            </div>
+                            {saved && inputAge === String(contextAge) ? (
+                                <div style={{ display: 'flex', gap: '8px', flex: 1 }}>
+                                    <button
+                                        className="age-popup-save-btn saved"
+                                        disabled
+                                        style={{ flex: 1 }}
+                                    >✓ Saved</button>
+                                    <button
+                                        className="age-popup-save-btn"
+                                        style={{ flex: 1, background: 'rgba(255,255,255,0.1)', color: 'var(--text)' }}
+                                        onClick={() => setSaved(false)}
+                                    >Change</button>
+                                </div>
+                            ) : (
+                                <button
+                                    className="age-popup-save-btn"
+                                    onClick={handleSave}
+                                    disabled={loading || !inputAge || !!error}
+                                >
+                                    {loading ? '…' : 'Save Age'}
+                                </button>
+                            )}
+                        </div>
+                        <p className="age-popup-desc">Age is used by the AI system to adjust language analysis according to age-related speech patterns.</p>
+                        {error && <p className="age-popup-error">⚠ {error}</p>}
+                    </div>
+
+                    {/* Age Group Badge */}
+                    {group && (
+                        <div className="age-popup-badge" style={{ borderColor: group.color + '55', background: group.color + '15' }}>
+                            <span className="age-popup-badge-icon">{group.icon}</span>
+                            <div className="age-popup-badge-info">
+                                <div className="age-popup-badge-name" style={{ color: group.color }}>
+                                    {group.label} <span>· Age {ageNum}</span>
+                                </div>
+                                <div className="age-popup-badge-baseline">
+                                    AI Model: <strong>{group.baseline}</strong>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Warning if not saved */}
+                    {!saved && (
+                        <div className="age-popup-warning">
+                            ⚠ Age is required before running speech analysis. Please enter and save your age.
+                        </div>
+                    )}
                 </div>
             )}
         </div>

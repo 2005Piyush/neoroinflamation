@@ -2167,197 +2167,296 @@ textarea:focus {
 }
 
 /* ════════════════════════════════════════════
-   User Info Card (Dashboard)
+   Age Chip Trigger + Popup Panel
    ════════════════════════════════════════════ */
-.user-info-card {
-    grid-column: 1 / -1;
+
+.age-chip-wrap {
+    position: relative;
+    flex-shrink: 0;
 }
 
-.uic-header {
+/* Compact trigger button */
+.age-chip-trigger {
     display: flex;
     align-items: center;
-    gap: 14px;
-    margin-bottom: 20px;
+    gap: 7px;
+    background: rgba(6, 12, 30, 0.65);
+    border: 1px solid rgba(0, 210, 190, 0.25);
+    border-radius: 12px;
+    padding: 8px 14px;
+    color: var(--text);
+    font-family: var(--font-body);
+    font-size: 0.82rem;
+    font-weight: 600;
+    cursor: pointer;
+    backdrop-filter: blur(12px);
+    transition: border-color 0.2s, background 0.2s, box-shadow 0.2s;
+    white-space: nowrap;
 }
 
-.uic-icon {
-    font-size: 2rem;
-    width: 48px;
-    height: 48px;
+.age-chip-trigger:hover,
+.age-chip-trigger.active {
+    border-color: rgba(0, 210, 190, 0.55);
+    background: rgba(0, 210, 190, 0.07);
+    box-shadow: 0 0 12px rgba(0, 210, 190, 0.12);
+}
+
+.act-label {
+    flex: 1;
+}
+
+.act-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+.act-warn {
+    color: #ff8232;
+    font-size: 0.75rem;
+}
+
+.act-arrow {
+    font-size: 0.6rem;
+    color: var(--muted);
+    margin-left: 2px;
+}
+
+/* Popup panel */
+.age-popup {
+    position: absolute;
+    top: calc(100% + 10px);
+    right: 0;
+    width: 340px;
+    background: rgba(6, 12, 32, 0.95);
+    border: 1px solid rgba(0, 210, 190, 0.25);
+    border-radius: 16px;
+    padding: 20px;
+    backdrop-filter: blur(24px);
+    box-shadow: 0 16px 48px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.04);
+    z-index: 999;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    animation: popupIn 0.18s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes popupIn {
+    from {
+        opacity: 0;
+        transform: translateY(-8px) scale(0.96);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+.age-popup-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.age-popup-icon {
+    font-size: 1.6rem;
+    width: 40px;
+    height: 40px;
     display: flex;
     align-items: center;
     justify-content: center;
     background: rgba(0, 210, 190, 0.1);
-    border: 1px solid rgba(0, 210, 190, 0.3);
-    border-radius: 12px;
+    border: 1px solid rgba(0, 210, 190, 0.28);
+    border-radius: 10px;
     flex-shrink: 0;
 }
 
-.uic-subtitle {
-    font-size: 0.82rem;
+.age-popup-title {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: var(--text);
+}
+
+.age-popup-sub {
+    font-size: 0.75rem;
     color: var(--muted);
     margin-top: 2px;
 }
 
-.uic-body {
+.age-popup-close {
+    margin-left: auto;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: var(--muted);
+    border-radius: 8px;
+    width: 28px;
+    height: 28px;
+    cursor: pointer;
+    font-size: 0.75rem;
     display: flex;
-    flex-direction: column;
-    gap: 16px;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.15s;
 }
 
-.uic-field {
+.age-popup-close:hover {
+    background: rgba(255, 71, 87, 0.15);
+    color: #ff4757;
+}
+
+/* Input field */
+.age-popup-field {
     display: flex;
     flex-direction: column;
     gap: 8px;
 }
 
-.uic-label {
-    font-size: 0.8rem;
+.age-popup-label {
+    font-size: 0.75rem;
     font-weight: 700;
     color: rgba(160, 200, 255, 0.9);
     text-transform: uppercase;
     letter-spacing: 0.06em;
 }
 
-.uic-input-row {
+.age-popup-input-row {
     display: flex;
     align-items: center;
-    gap: 12px;
-    flex-wrap: wrap;
+    gap: 10px;
 }
 
-.uic-input-wrap {
+.age-popup-input-wrap {
     position: relative;
     display: flex;
     align-items: center;
 }
 
-.uic-input {
-    width: 180px;
+.age-popup-input {
+    width: 140px;
     background: rgba(255, 255, 255, 0.05);
     border: 1.5px solid rgba(79, 139, 255, 0.25);
-    border-radius: 12px;
-    padding: 11px 42px 11px 16px;
+    border-radius: 10px;
+    padding: 10px 36px 10px 14px;
     color: var(--text);
     font-family: var(--font-body);
-    font-size: 1rem;
+    font-size: 0.95rem;
     font-weight: 600;
     outline: none;
-    transition: border-color 0.2s, background 0.2s, box-shadow 0.2s;
+    transition: border-color 0.2s, box-shadow 0.2s;
     appearance: textfield;
 }
 
-.uic-input::-webkit-inner-spin-button,
-.uic-input::-webkit-outer-spin-button {
+.age-popup-input::-webkit-inner-spin-button,
+.age-popup-input::-webkit-outer-spin-button {
     -webkit-appearance: none;
     margin: 0;
 }
 
-.uic-input:focus {
+.age-popup-input:focus {
     border-color: rgba(0, 210, 190, 0.65);
-    background: rgba(0, 210, 190, 0.05);
-    box-shadow: 0 0 0 3px rgba(0, 210, 190, 0.12), 0 0 18px rgba(0, 210, 190, 0.08);
+    box-shadow: 0 0 0 3px rgba(0, 210, 190, 0.1);
 }
 
-.uic-input-error {
+.age-popup-input.err {
     border-color: rgba(255, 71, 87, 0.6) !important;
 }
 
-.uic-input-ok {
-    border-color: rgba(0, 212, 170, 0.6) !important;
+.age-popup-input.ok {
+    border-color: rgba(0, 212, 170, 0.55) !important;
 }
 
-.uic-input-unit {
+.age-popup-unit {
     position: absolute;
-    right: 12px;
-    font-size: 0.75rem;
+    right: 10px;
+    font-size: 0.7rem;
     color: var(--muted);
     pointer-events: none;
-    font-weight: 500;
 }
 
-.uic-save-btn {
-    padding: 11px 24px;
-    border-radius: 12px;
+.age-popup-save-btn {
+    flex: 1;
+    padding: 10px 18px;
+    border-radius: 10px;
     border: none;
     background: linear-gradient(135deg, #00d2be, #4f8bff);
     color: #fff;
     font-weight: 700;
-    font-size: 0.9rem;
+    font-size: 0.85rem;
     cursor: pointer;
     transition: opacity 0.2s, transform 0.15s;
-    white-space: nowrap;
 }
 
-.uic-save-btn:hover:not(:disabled) {
+.age-popup-save-btn:hover:not(:disabled) {
     opacity: 0.88;
     transform: translateY(-1px);
 }
 
-.uic-save-btn:disabled {
-    opacity: 0.4;
+.age-popup-save-btn:disabled {
+    opacity: 0.35;
     cursor: not-allowed;
 }
 
-.uic-save-btn.saved {
+.age-popup-save-btn.saved {
     background: linear-gradient(135deg, #00d4aa, #27ae60);
 }
 
-.uic-desc {
-    font-size: 0.82rem;
+.age-popup-desc {
+    font-size: 0.78rem;
     color: var(--muted);
     line-height: 1.5;
 }
 
-.uic-error {
-    font-size: 0.82rem;
+.age-popup-error {
+    font-size: 0.78rem;
     color: #ff4757;
     font-weight: 500;
 }
 
-/* Age Group Badge */
-.uic-age-badge {
+/* Age Group Badge inside popup */
+.age-popup-badge {
     display: flex;
     align-items: center;
-    gap: 14px;
-    padding: 14px 18px;
-    border-radius: 12px;
+    gap: 12px;
+    padding: 12px 14px;
+    border-radius: 10px;
     border: 1px solid;
 }
 
-.uic-badge-icon {
-    font-size: 2rem;
+.age-popup-badge-icon {
+    font-size: 1.8rem;
     flex-shrink: 0;
 }
 
-.uic-badge-label {
-    font-size: 1rem;
+.age-popup-badge-name {
+    font-size: 0.92rem;
     font-weight: 700;
 }
 
-.uic-badge-label span {
-    font-size: 0.82rem;
+.age-popup-badge-name span {
+    font-size: 0.78rem;
     font-weight: 400;
     color: var(--muted);
 }
 
-.uic-badge-baseline {
-    font-size: 0.78rem;
+.age-popup-badge-baseline {
+    font-size: 0.72rem;
     color: var(--muted);
-    margin-top: 2px;
+    margin-top: 3px;
 }
 
-.uic-badge-baseline strong {
+.age-popup-badge-baseline strong {
     color: var(--text);
 }
 
-/* Warning when no age saved */
-.uic-warning {
+/* Warning */
+.age-popup-warning {
     background: rgba(255, 130, 50, 0.1);
     border: 1px solid rgba(255, 130, 50, 0.35);
-    border-radius: 10px;
-    padding: 10px 16px;
-    font-size: 0.82rem;
+    border-radius: 8px;
+    padding: 9px 13px;
+    font-size: 0.78rem;
     color: #ff8232;
     line-height: 1.4;
 }

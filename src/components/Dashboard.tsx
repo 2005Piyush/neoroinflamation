@@ -68,17 +68,17 @@ export default function Dashboard({ onNavigate }: { onNavigate: (v: ViewName) =>
 
     return (
         <div className="view active">
-            <div className="view-header">
-                <h1>Neural Health Dashboard</h1>
-                <p>{baseline?.established
-                    ? `Baseline established · ${sessions.length} sessions · Risk scoring active`
-                    : `${sessions.length}/3 sessions — ${Math.max(0, 3 - sessions.length)} more needed to activate risk scoring`}</p>
-                <p style={{ fontSize: '0.78rem', color: age ? 'var(--teal)' : 'var(--muted)', marginTop: 2 }}>🧬 {ageNote}</p>
+            <div className="view-header dash-header-row">
+                <div>
+                    <h1>Neural Health Dashboard</h1>
+                    <p>{baseline?.established
+                        ? `Baseline established · ${sessions.length} sessions · Risk scoring active`
+                        : `${sessions.length}/3 sessions — ${Math.max(0, 3 - sessions.length)} more needed to activate risk scoring`}</p>
+                    <p style={{ fontSize: '0.78rem', color: age ? 'var(--teal)' : 'var(--muted)', marginTop: 2 }}>🧬 {ageNote}</p>
+                </div>
+                <AgeCard />
             </div>
             <div className="dash-grid">
-
-                {/* ── User Information Card (Age) ── */}
-                <AgeCard />
 
                 {/* Risk Gauge */}
                 <div className="glass-card gauge-card">
