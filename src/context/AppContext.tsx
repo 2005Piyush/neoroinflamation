@@ -122,7 +122,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         }
     };
 
-    if (sessionsLoading) {
+    if (sessionsLoading && uid) {
         return (
             <div style={{
                 height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center',
