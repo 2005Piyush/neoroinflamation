@@ -1,6 +1,7 @@
 import React from 'react';
 import { useApp } from '../context/AppContext';
 import { FEAT_CFG, featureNorm, formatVal, DOMAIN_CFG } from '../utils/nlp';
+import { getAgeGroup } from './AgeCard';
 import type { ViewName } from '../types';
 
 function groupScore(group: string, z: Record<string, number> | null): string {
@@ -42,7 +43,7 @@ export default function Analysis({ onNavigate }: { onNavigate: (v: ViewName) => 
             <div className="view-header"><h1>Linguistic Analysis</h1></div>
             <div className="empty-full">
                 <div className="empty-icon" style={{ fontSize: '3rem' }}>🔬</div>
-                <p>No session recorded yet.</p>
+                <p>No session yet.</p>
                 <button className="btn btn-primary" onClick={() => onNavigate('record')}>Record Session</button>
             </div>
         </div>
@@ -51,14 +52,48 @@ export default function Analysis({ onNavigate }: { onNavigate: (v: ViewName) => 
     const f = last.features;
     const z = last.zScores;
     const top = last.topFeatures;
+    const sessionAge = last.age ?? null;
+    const ageGroup = sessionAge ? getAgeGroup(sessionAge) : null;
 
     return (
         <div className="view active">
             <div className="view-header">
                 <h1>Linguistic Analysis</h1>
-                <p>Session {last.sessionNumber} · {last.taskType.replace(/_/g, ' ')} · {new Date(last.timestamp).toLocaleDateString()} · {f.wordCount} words</p>
+                <p>Session {last.sessionNumber} · {last.taskType.replace(/_/g, ' ')} · {new Date(last.timestamp).toLocaleDateString()} · {f.wordCount} words
+                    {sessionAge ? <span style={{ color: 'var(--teal)', marginLeft: 8 }}>· Age {sessionAge}</span> : null}
+                </p>
             </div>
             <div className="analysis-grid">
+
+                {/* Age Context Card */}
+                {ageGroup ? (
+                    <div className="glass-card age-context-card">
+                        <div className="card-label">AI Analysis Context</div>
+                        <div className="age-ctx-body">
+                            <div className="age-ctx-icon">{ageGroup.icon}</div>
+                            <div className="age-ctx-info">
+                                <div className="age-ctx-row">
+                                    <span className="age-ctx-lbl">User Age</span>
+                                    <span className="age-ctx-val" style={{ color: ageGroup.color }}>{sessionAge} years</span>
+                                </div>
+                                <div className="age-ctx-row">
+                                    <span className="age-ctx-lbl">Age Category</span>
+                                    <span className="age-ctx-val" style={{ color: ageGroup.color }}>{ageGroup.label}</span>
+                                </div>
+                                <div className="age-ctx-row">
+                                    <span className="age-ctx-lbl">AI Baseline Model</span>
+                                    <span className="age-ctx-val">{ageGroup.baseline}</span>
+                                </div>
+                                <div className="age-ctx-desc">Speech patterns are compared to the {ageGroup.baseline} reference. Age-adjusted risk multipliers are applied to all domain scores.</div>
+                            </div>
+                        </div>
+                    </div>
+                ) : (
+                    <div className="glass-card age-context-card">
+                        <div className="card-label">AI Analysis Context</div>
+                        <p style={{ color: '#ff8232', fontSize: '0.85rem' }}>⚠ No age recorded for this session. Return to Dashboard and set your age for calibrated results.</p>
+                    </div>
+                )}
 
                 {GROUPS.map(grp => {
                     const score = groupScore(grp.id, z);

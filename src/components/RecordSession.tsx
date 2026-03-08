@@ -9,7 +9,7 @@ import type { Session, TaskType } from '../types';
 const TASKS: TaskType[] = ['story_narration', 'descriptive', 'word_association', 'recall'];
 
 export default function RecordSession() {
-    const { sessions, baseline, addSession } = useApp();
+    const { sessions, baseline, addSession, age } = useApp();
     const [task, setTask] = useState<TaskType>('story_narration');
     const [recording, setRecording] = useState(false);
     const [transcript, setTranscript] = useState('');
@@ -72,6 +72,11 @@ export default function RecordSession() {
     };
 
     const analyse = () => {
+        // Block analysis if age not set
+        if (!age) {
+            alert('Please enter and save your age in the Dashboard → User Information section before running analysis.');
+            return;
+        }
         const text = transcript || textInput;
         if (!text.trim() || text.trim().split(/\s+/).length < 30) {
             alert('Provide at least 30 words for meaningful analysis.'); return;
@@ -81,9 +86,9 @@ export default function RecordSession() {
         const sessionNum = sessions.length + 1;
         const bl = buildBaseline([...sessions, { features } as any]);
         const z = computeZScores(features, bl);
-        const rs = computeRiskScore(z);
-        const doms = computeDomainScores(z);
-        const fat = computeFatigue(features, baseline);
+        const rs = computeRiskScore(z, age);          // age-calibrated
+        const doms = computeDomainScores(z, age);     // age-calibrated
+        const fat = computeFatigue(features, baseline, age); // age-calibrated
         const top = topRiskFeatures(z);
         const summary = generateSummary(sessionNum, rs, features, doms, z, baseline);
 
@@ -92,6 +97,7 @@ export default function RecordSession() {
             taskType: task, transcript: text, duration: Math.round(durationSec),
             features, zScores: z, riskScore: rs, cognitiveDomains: doms,
             fatigueScore: fat, topFeatures: top, summary,
+            age,   // store age used for this session
         };
         stopRecording();
         addSession(session);

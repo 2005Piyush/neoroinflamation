@@ -56,6 +56,7 @@ export interface Session {
     fatigueScore: FatigueScore;
     topFeatures: TopFeature[];
     summary: string;
+    age?: number | null;   // age used for this session's calibration
 }
 
 export interface BaselineStats {

@@ -7,6 +7,17 @@ export default function Report({ onNavigate }: { onNavigate: (v: ViewName) => vo
     const { sessions, baseline, clearAll } = useApp();
     const ready = sessions.length >= 3 && baseline?.established;
 
+    if (sessions.length === 0) return (
+        <div className="view active">
+            <div className="view-header"><h1>Clinical Report</h1></div>
+            <div className="empty-full">
+                <div className="empty-icon" style={{ fontSize: '3rem' }}>📋</div>
+                <p>No session yet.</p>
+                <button className="btn btn-primary" onClick={() => onNavigate('record')}>Record Session</button>
+            </div>
+        </div>
+    );
+
     if (!ready) return (
         <div className="view active">
             <div className="view-header"><h1>Clinical Report</h1></div>

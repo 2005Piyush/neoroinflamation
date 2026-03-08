@@ -171,6 +171,27 @@ body::after {
     animation: pulse 2s infinite;
 }
 
+.logout-btn {
+    background: transparent;
+    border: none;
+    color: var(--muted);
+    cursor: pointer;
+    padding: 6px;
+    margin-left: 10px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+    border: 1px solid transparent;
+}
+
+.logout-btn:hover {
+    color: var(--danger);
+    background: rgba(255, 71, 87, 0.1);
+    border-color: rgba(255, 71, 87, 0.2);
+}
+
 @keyframes pulse {
 
     0%,

@@ -33,7 +33,7 @@ export default function History({ onNavigate }: { onNavigate: (v: ViewName) => v
             <div className="view-header"><h1>Session History</h1></div>
             <div className="empty-full">
                 <div className="empty-icon" style={{ fontSize: '3rem' }}>📈</div>
-                <p>No history yet.</p>
+                <p>No session yet.</p>
                 <button className="btn btn-primary" onClick={() => onNavigate('record')}>Record Session</button>
             </div>
         </div>

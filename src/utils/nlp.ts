@@ -41,7 +41,7 @@ const TRANSITION_WORDS = new Set('however therefore furthermore moreover consequ
 
 // ── Core NLP Functions ───────────────────────────────────
 function tokenize(text: string): string[] {
-    return (text.toLowerCase().match(/\b[a-z']+\b/g) || []).filter(w => w.length > 1);
+    return (text.toLowerCase().match(/\b[a-z']+\b/g) || [] as string[]).filter(w => w.length > 1);
 }
 function splitSentences(text: string): string[] {
     return text.split(/(?<=[.!?])\s+|[.!?]\s*$/).map(s => s.trim()).filter(s => s.length > 4);
@@ -122,7 +122,67 @@ export function computeZScores(features: LinguisticFeatures, baseline: BaselineS
     return z;
 }
 
-export function computeRiskScore(z: ZScores | null): number | null {
+/**
+ * Returns age-based calibration factors.
+ * Older age groups have naturally higher baseline risk and reduced cognitive reserve,
+ * so scores are amplified. Younger users get a slight protective offset.
+ */
+export function ageCalibration(age: number | null): {
+    riskMultiplier: number;        // multiplicative boost on raw risk score
+    domainMultipliers: Record<string, number>;  // per-domain amplifiers
+    fatigueMultiplier: number;
+} {
+    if (!age || age < 1) {
+        return { riskMultiplier: 1, domainMultipliers: { attention: 1, workingMemory: 1, executiveControl: 1, semanticRetrieval: 1 }, fatigueMultiplier: 1 };
+    }
+
+    let riskMultiplier: number;
+    let attention: number;
+    let workingMemory: number;
+    let executiveControl: number;
+    let semanticRetrieval: number;
+    let fatigueMultiplier: number;
+
+    if (age < 30) {
+        // Young adults: high cognitive reserve, lower risk amplification
+        riskMultiplier = 0.75;
+        attention = 0.85; workingMemory = 0.90; executiveControl = 0.85; semanticRetrieval = 0.80;
+        fatigueMultiplier = 0.80;
+    } else if (age < 45) {
+        // Early middle age: near-baseline
+        riskMultiplier = 0.90;
+        attention = 0.95; workingMemory = 0.95; executiveControl = 0.95; semanticRetrieval = 0.90;
+        fatigueMultiplier = 0.90;
+    } else if (age < 60) {
+        // Middle age: mild amplification
+        riskMultiplier = 1.10;
+        attention = 1.05; workingMemory = 1.10; executiveControl = 1.05; semanticRetrieval = 1.10;
+        fatigueMultiplier = 1.10;
+    } else if (age < 70) {
+        // Early senior: moderate amplification — working memory & semantic retrieval most affected
+        riskMultiplier = 1.30;
+        attention = 1.15; workingMemory = 1.35; executiveControl = 1.25; semanticRetrieval = 1.40;
+        fatigueMultiplier = 1.30;
+    } else if (age < 80) {
+        // Senior: significant amplification
+        riskMultiplier = 1.55;
+        attention = 1.30; workingMemory = 1.60; executiveControl = 1.45; semanticRetrieval = 1.65;
+        fatigueMultiplier = 1.50;
+    } else {
+        // Elderly (80+): highest risk amplification
+        riskMultiplier = 1.85;
+        attention = 1.50; workingMemory = 1.90; executiveControl = 1.70; semanticRetrieval = 1.95;
+        fatigueMultiplier = 1.80;
+    }
+
+    return {
+        riskMultiplier,
+        domainMultipliers: { attention, workingMemory, executiveControl, semanticRetrieval },
+        fatigueMultiplier,
+    };
+}
+
+export function computeRiskScore(z: ZScores | null, age?: number | null): number | null {
     if (!z) return null;
     let num = 0, denom = 0;
     for (const [k, cfg] of Object.entries(FEAT_CFG)) {
@@ -130,11 +190,14 @@ export function computeRiskScore(z: ZScores | null): number | null {
         const riskZ = cfg.direction === 'higher' ? -z[k] : z[k];
         num += Math.max(0, riskZ) * cfg.weight; denom += cfg.weight;
     }
-    return Math.round(Math.min(100, Math.max(0, (num / denom) * 40)));
+    const raw = Math.min(100, Math.max(0, (num / denom) * 40));
+    const { riskMultiplier } = ageCalibration(age ?? null);
+    return Math.round(Math.min(100, raw * riskMultiplier));
 }
 
-export function computeDomainScores(z: ZScores | null): CognitiveDomains {
+export function computeDomainScores(z: ZScores | null, age?: number | null): CognitiveDomains {
     if (!z) return { attention: 0, workingMemory: 0, executiveControl: 0, semanticRetrieval: 0 };
+    const { domainMultipliers } = ageCalibration(age ?? null);
     const out: any = {};
     for (const [dk, cfg] of Object.entries(DOMAIN_CFG)) {
         let s = 0, c = 0;
@@ -143,17 +206,19 @@ export function computeDomainScores(z: ZScores | null): CognitiveDomains {
             const rz = FEAT_CFG[fk].direction === 'higher' ? -z[fk] : z[fk];
             s += Math.max(0, rz); c++;
         }
-        out[dk] = c > 0 ? Math.min(100, Math.round((s / c) * 40)) : 0;
+        const rawDomain = c > 0 ? Math.min(100, Math.round((s / c) * 40)) : 0;
+        out[dk] = Math.min(100, Math.round(rawDomain * (domainMultipliers[dk] ?? 1)));
     }
     return out as CognitiveDomains;
 }
 
-export function computeFatigue(features: LinguisticFeatures, baseline: BaselineStats | null): FatigueScore {
+export function computeFatigue(features: LinguisticFeatures, baseline: BaselineStats | null, age?: number | null): FatigueScore {
+    const { fatigueMultiplier } = ageCalibration(age ?? null);
     const bslWPM = baseline?.established ? baseline.means['speechRate'] : 130;
     const bslCpx = baseline?.established ? baseline.means['complexityScore'] : 0.5;
-    const hesitation = Math.min(100, Math.round(Math.max(0, (bslWPM - features.speechRate) / bslWPM * 100)));
-    const slowdown = Math.min(100, Math.round(Math.max(0, (bslWPM - features.speechRate) / bslWPM * 80)));
-    const complexityDrop = Math.min(100, Math.round(Math.max(0, (bslCpx - features.complexityScore) / Math.max(bslCpx, 0.01) * 100)));
+    const hesitation = Math.min(100, Math.round(Math.max(0, (bslWPM - features.speechRate) / bslWPM * 100) * fatigueMultiplier));
+    const slowdown = Math.min(100, Math.round(Math.max(0, (bslWPM - features.speechRate) / bslWPM * 80) * fatigueMultiplier));
+    const complexityDrop = Math.min(100, Math.round(Math.max(0, (bslCpx - features.complexityScore) / Math.max(bslCpx, 0.01) * 100) * fatigueMultiplier));
     return { overall: Math.min(100, Math.round((hesitation + slowdown + complexityDrop) / 3)), hesitation, slowdown, complexityDrop };
 }
 

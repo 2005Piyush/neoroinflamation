@@ -2,17 +2,33 @@ import React, { useRef, useEffect } from 'react';
 import { Radar } from 'react-chartjs-2';
 import { Chart as ChartJS, RadialLinearScale, PointElement, LineElement, Filler, Tooltip } from 'chart.js';
 import { useApp } from '../context/AppContext';
-import { riskColor, riskBand, computeDegradation, DOMAIN_CFG } from '../utils/nlp';
+import { riskColor, riskBand, computeDegradation, DOMAIN_CFG, computeRiskScore, computeZScores, computeDomainScores, computeFatigue, ageCalibration } from '../utils/nlp';
 import type { ViewName } from '../types';
+import AgeCard from './AgeCard';
 
 ChartJS.register(RadialLinearScale, PointElement, LineElement, Filler, Tooltip);
 
 export default function Dashboard({ onNavigate }: { onNavigate: (v: ViewName) => void }) {
-    const { sessions, baseline } = useApp();
+    const { sessions, baseline, age } = useApp();
     const last = sessions[sessions.length - 1] || null;
     const gaugeRef = useRef<HTMLCanvasElement>(null);
-    const rs = last?.riskScore ?? null;
+
+    // ── Recompute scores live using current age calibration ──
+    const z = last && baseline ? computeZScores(last.features, baseline) : null;
+    const rs = z ? computeRiskScore(z, age) : (last?.riskScore ?? null);
+    const doms = z ? computeDomainScores(z, age) : (last?.cognitiveDomains ?? null);
+    const fat = last ? computeFatigue(last.features, baseline, age) : null;
     const band = riskBand(rs);
+
+    // Show age calibration note
+    const { riskMultiplier } = ageCalibration(age);
+    const ageNote = age
+        ? riskMultiplier < 1
+            ? `Age ${age} · protective factor applied (×${riskMultiplier.toFixed(2)})`
+            : riskMultiplier > 1
+                ? `Age ${age} · elevated risk factor applied (×${riskMultiplier.toFixed(2)})`
+                : `Age ${age} · baseline risk profile`
+        : 'Enter age above to calibrate scores';
 
     // ── Draw gauge ──
     useEffect(() => {
@@ -33,15 +49,13 @@ export default function Dashboard({ onNavigate }: { onNavigate: (v: ViewName) =>
     }, [rs]);
 
     const deg = computeDegradation(sessions);
-    const fat = last?.fatigueScore;
 
     // Baseline ring math
     const n = Math.min(sessions.length, 3);
     const circ = 2 * Math.PI * 34;
     const dashArr = `${(n / 3) * circ} ${circ}`;
 
-    // Radar data
-    const doms = last?.cognitiveDomains;
+    // Radar data (uses live age-calibrated doms)
     const radarData = {
         labels: Object.values(DOMAIN_CFG).map(d => d.label),
         datasets: [{
@@ -59,8 +73,12 @@ export default function Dashboard({ onNavigate }: { onNavigate: (v: ViewName) =>
                 <p>{baseline?.established
                     ? `Baseline established · ${sessions.length} sessions · Risk scoring active`
                     : `${sessions.length}/3 sessions — ${Math.max(0, 3 - sessions.length)} more needed to activate risk scoring`}</p>
+                <p style={{ fontSize: '0.78rem', color: age ? 'var(--teal)' : 'var(--muted)', marginTop: 2 }}>🧬 {ageNote}</p>
             </div>
             <div className="dash-grid">
+
+                {/* ── User Information Card (Age) ── */}
+                <AgeCard />
 
                 {/* Risk Gauge */}
                 <div className="glass-card gauge-card">
