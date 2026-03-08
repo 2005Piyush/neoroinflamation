@@ -122,20 +122,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         }
     };
 
-    if (sessionsLoading && uid) {
-        return (
-            <div style={{
-                height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                background: '#030610', color: '#4f8bff', fontSize: '1rem', fontFamily: 'Inter, sans-serif', gap: '12px'
-            }}>
-                <span style={{
-                    width: 24, height: 24, border: '2px solid rgba(79,139,255,0.3)', borderTopColor: '#4f8bff',
-                    borderRadius: '50%', animation: 'spin 0.7s linear infinite', display: 'inline-block'
-                }} />
-                Syncing sessions...
-            </div>
-        );
-    }
+
 
     return (
         <AppContext.Provider value={{ sessions, baseline, modalSession, age, addSession, setAge, clearModal, clearAll, sessionsLoading }}>
